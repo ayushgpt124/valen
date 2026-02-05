@@ -1,68 +1,113 @@
-"use client";
-import { useState } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import "./App.css";
 
 export default function Page() {
-  const [noCount, setNoCount] = useState(0);
   const [yesPressed, setYesPressed] = useState(false);
-  const yesButtonSize = noCount * 20 + 16;
+  const [noPosition, setNoPosition] = useState<{ top: number; left: number } | null>(null);
+  const [hearts, setHearts] = useState<{ id: number; x: number; y: number }[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const heartIdRef = useRef(0);
 
-  const handleNoClick = () => {
-    setNoCount(noCount + 1);
+  const moveNoButton = useCallback(() => {
+    if (!containerRef.current) return;
+    const container = containerRef.current;
+    const rect = container.getBoundingClientRect();
+    const buttonWidth = 120;
+    const buttonHeight = 50;
+    const padding = 20;
+
+    const maxX = rect.width - buttonWidth - padding;
+    const maxY = rect.height - buttonHeight - padding;
+
+    const newLeft = Math.max(padding, Math.random() * maxX);
+    const newTop = Math.max(padding, Math.random() * maxY);
+
+    setNoPosition({ top: newTop, left: newLeft });
+  }, []);
+
+  const handleYesClick = () => {
+    setYesPressed(true);
   };
 
-  const getNoButtonText = () => {
-    const phrases = [
-      "No",
-      "Are you sure?",
-      "What if I asked really nicely?",
-      "Pretty please",
-      "With a chocolate rice cake on top",
-      "What about a matcha frostie",
-      "PLEASE POOKIE",
-      "But :*(",
-      "I am going to die",
-      "Yep im dead",
-      "ok ur talking to nathan's ghost",
-      "please babe",
-      ":((((",
-      "PRETTY PLEASE",
-      "Estoy muerto",
-      "No :(",
-    ];
-
-    return phrases[Math.min(noCount, phrases.length - 1)];
-  };
+  useEffect(() => {
+    if (!yesPressed) return;
+    const interval = setInterval(() => {
+      heartIdRef.current += 1;
+      const newHeart = {
+        id: heartIdRef.current,
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+      };
+      setHearts((prev) => [...prev.slice(-20), newHeart]);
+    }, 400);
+    return () => clearInterval(interval);
+  }, [yesPressed]);
 
   return (
-    <div className="-mt-16 flex h-screen flex-col items-center justify-center">
+    <div ref={containerRef} className="page-container">
       {yesPressed ? (
-        <>
-          <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExbWphb3NmZDZ2ZjFnMGdzaTd1Mjh3Y2txbGNla2l0Mm1rb3V5bHlyMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/IzXiddo2twMmdmU8Lv/giphy.gif" />
-          <div className="my-4 text-4xl font-bold">WOOOOOO!!! pookie!! ;))</div>
-        </>
-      ) : (
-        <>
-          <img
-            className="h-[200px]"
-            src="https://gifdb.com/images/high/cute-love-bear-roses-ou7zho5oosxnpo6k.gif"
-          />
-          <h1 className="my-4 text-4xl">Deepika Will you out on date with me on 7th Feb</h1>
-          <div className="flex items-center">
-            <button
-              className={`mr-4 rounded bg-green-500 px-4 py-2 font-bold text-white hover:bg-green-700`}
-              style={{ fontSize: yesButtonSize }}
-              onClick={() => setYesPressed(true)}
+        <div className="yes-screen">
+          {hearts.map((heart) => (
+            <span
+              key={heart.id}
+              className="floating-heart"
+              style={{ left: `${heart.x}%`, top: `${heart.y}%` }}
             >
-              Yes
-            </button>
-            <button
-              onClick={handleNoClick}
-              className=" rounded bg-red-500 px-4 py-2 font-bold text-white hover:bg-red-700"
-            >
-              {noCount === 0 ? "No" : getNoButtonText()}
-            </button>
+              &#10084;
+            </span>
+          ))}
+          <div className="yes-content">
+            <div className="heart-burst">💕🎉✨</div>
+            <h1 className="romantic-title">She Said Yes! 🥰💍</h1>
+            <p className="romantic-text">
+              I knew you'd say yes! Saturday is going to be the most magical day ✨🌹💖
+            </p>
+            <div className="sparkle-row">
+              💃🕺 🥂🍾 💕💫🎶
+            </div>
           </div>
-        </>
+        </div>
+      ) : (
+        <div className="ask-screen">
+          <div className="question-card">
+            <div className="rose-emoji">&#127801;</div>
+            <h1 className="question-title">
+              Will you go on a date with me this Saturday?
+            </h1>
+            <p className="question-sub">I promise it'll be worth it &#128522;</p>
+            <div className="button-row">
+              <button className="yes-button" onClick={handleYesClick}>
+                Yes &#10084;&#65039;
+              </button>
+              {!noPosition && (
+                <button
+                  className="no-button"
+                  onMouseEnter={moveNoButton}
+                  onTouchStart={moveNoButton}
+                  onClick={moveNoButton}
+                >
+                  No
+                </button>
+              )}
+            </div>
+          </div>
+          {noPosition && (
+            <button
+              className="no-button"
+              style={{
+                position: "absolute",
+                top: noPosition.top,
+                left: noPosition.left,
+                transition: "all 0.2s ease-out",
+              }}
+              onMouseEnter={moveNoButton}
+              onTouchStart={moveNoButton}
+              onClick={moveNoButton}
+            >
+              No
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
